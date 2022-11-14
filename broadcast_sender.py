@@ -16,11 +16,10 @@ def broadcast():
     hostname = socket.gethostname()
     host = socket.gethostbyname(hostname)
     print(host)
-    message = f'HOST {host} PORT {BROADCAST_PORT} NAME BOB'.encode('utf-8')
-    while True:
-        broad.sendto(message, ('10.35.70.255',BROADCAST_PORT))
-        print("Message sent!")
-        time.sleep(100)
+    message = f'HOST {host} PORT {BROADCAST_PORT} NAME BOB'.encode('utf-8')    
+    broad.sendto(message, ('10.35.70.255',BROADCAST_PORT))
+    print("Message sent!")
+    time.sleep(100)
 
 
 
