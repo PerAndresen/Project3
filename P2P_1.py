@@ -3,6 +3,8 @@ import time
 import os
 import struct
 import _thread
+import selectors
+import types
 
 Dictionary = {'getd':'0000',  # get directory
 			  'sendd':'0001', # send directory
@@ -10,8 +12,9 @@ Dictionary = {'getd':'0000',  # get directory
 			  'sendf':'0011', # send file
 			  'eof':'0100',   # end of file
 			  'nofile':'0101',# no such file
-			  'nop':'1110',   # do nothing
+			  'sensor':'1110',   # sensor
 			  'quit':'1111',  # quit
+
 			 }
 # client codes:
 def GetDirectory(sock):
@@ -93,7 +96,7 @@ def SendFile(sock,name):
 # client console:
 def ClientConsole():
 	s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	s.connect(('127.0.0.1',10090))
+	s.connect(('10.35.70.17',33303))
 	print('==================================================')
 	print('The peer is running as a client...')
 	print('==================================================')
@@ -108,6 +111,9 @@ def ClientConsole():
 			s.send(b'1111')
 			s.close()
 			break
+		elif operation == 'sensor':
+			os.system('python3 sensor.py')
+			accept_sensor()
 		elif operation=='help':
 			print('getd: get the file list of the server.')
 			print('getf: get file from the server.')
@@ -147,7 +153,7 @@ def thread_client(threadName,ids):
 
 def thread_server(threadName,ids):
 	s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	s.bind(('127.0.0.1',10080))
+	s.bind(('10.35.70.16',33302))
 	s.listen(1)
 	print('==================================================')
 	print('The peer is running as a server...')
@@ -156,7 +162,21 @@ def thread_server(threadName,ids):
 		print('Wait for a connection...')
 		sock,addr = s.accept()
 		ServerConsole(sock,addr)
-		
+
+
+####################### Accept sensor data
+
+
+def accept_sensor():
+	#selector = selectors.DefaultSelector()
+	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	sock.bind(('10.35.70.16', 33302))
+	print("Socket bound to Port for sensor:", 33302)
+	sock.listen()
+
+
+
+
 # main thread:
 # 创建两个线程
 try:

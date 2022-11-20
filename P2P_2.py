@@ -3,6 +3,8 @@ import time
 import os
 import struct
 import _thread
+import selectors
+import types
 
 Dictionary = {'getd':'0000',  # get directory
 			  'sendd':'0001', # send directory
@@ -93,7 +95,7 @@ def SendFile(sock,name):
 # client console:
 def ClientConsole():
 	s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	s.connect(('127.0.0.1',10080))
+	s.connect(('10.35.70.16',33302))
 	print('==================================================')
 	print('The peer is running as a client...')
 	print('==================================================')
@@ -147,8 +149,8 @@ def thread_client(threadName,ids):
 
 def thread_server(threadName,ids):
 	s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	s.bind(('127.0.0.1',10090))
-	s.listen(1)
+	s.bind(('10.35.70.17',33304))
+	s.listen(3)
 	print('==================================================')
 	print('The peer is running as a server...')
 	print('==================================================')
@@ -160,12 +162,26 @@ def thread_server(threadName,ids):
 		except ConnectionResetError:
 			print('The client connecting to the peer has broken the connection.')
 			continue
+      
+####################### Accept sensor data
+
+SENSOR_PORT = 33401
+def accept_wrapper(self, sock, selector):
+	conn, addr = sock.accept()
+	print("Accepted connection from", addr)
+	conn.setblocking(False)
+	data = types.SimpleNamespace(addr=addr, in_bytes=b'', out_bytes=b'')  # 一个简单的 object 子类，提供了访问其命名空间的属性，以及一个有意义的 repr。
+	events = selectors.EVENT_READ | selectors.EVENT_WRITE  # 事件是写或者读
+	selector.register(conn, events, data=data)
+
+	
 		
 # main thread:
 # 创建两个线程
 try:
    _thread.start_new_thread( thread_client, ("Thread-client",1))
    _thread.start_new_thread( thread_server, ("Thread-server",2))
+   
 except:
    print ("Error: unable to start thread")
 while True:
