@@ -7,6 +7,12 @@ import socket
 import time
 import types
 
+Dictionary = {
+    'temp_high':'0000',
+    'temp_low':'0001',
+    'air_pressure':'0010',
+    '/Local/Sensors/SensorWeather':'0100'
+}
 
 class Sensor:
     # Map sensor types to random value generator functions
@@ -20,6 +26,7 @@ class Sensor:
         self.port = port
         self.selector = selectors.DefaultSelector()
         self.finished = False
+
 
     def start_connections(self, num_conns, messages):
         server_addr = (self.host, self.port)
@@ -77,22 +84,23 @@ class Sensor:
 
 
 def main():
-    parser = argparse.ArgumentParser()
+    '''parser = argparse.ArgumentParser()
     parser.add_argument('--sensortype', help='Type of sensor', required=True)
     args = parser.parse_args()
     sensorType = args.sensortype
-
+    '''
     port_table = {'VehiclePort': 33302}  # Hardcoded port table for testing
     port = port_table['VehiclePort']     # The port used by the server
 
-    initial_message = sensorType + " 1"
+    initial_message = "Temperature" + " 1"
     byte_messages = [initial_message.encode('UTF-8')]
 
     # The server's hostname or IP address
     host = socket.gethostbyname(socket.gethostname())
     mySensor = Sensor(host, port)
     mySensor.start_connections(1, byte_messages)
-    mySensor.run(sensorType)
+    mySensor.service_connection()
+    #mySensor.run(sensorType)
 
 
 if __name__ == '__main__':
