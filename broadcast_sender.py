@@ -5,7 +5,8 @@ import types
 import threading
 import time
 
-BROADCAST_PORT = 33333
+BROADCAST_PORT = 33339
+name ="Dublin"
 
 def broadcast():
     print("Broadcasting")
@@ -16,10 +17,10 @@ def broadcast():
     hostname = socket.gethostname()
     host = socket.gethostbyname(hostname)
     print(host)
-    message = f'HOST {host} PORT {BROADCAST_PORT} NAME BOB'.encode('utf-8')    
+    message = f'GROUP8 HOST {host} PORT {BROADCAST_PORT} NAME {name}'.encode('utf-8')    
     broad.sendto(message, ('10.35.70.255',BROADCAST_PORT))
-    print("Message sent!")
-    time.sleep(100)
+    print("Message sent!", message)
+    time.sleep(5)
 
 
 
