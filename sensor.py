@@ -82,7 +82,7 @@ def main():
     args = parser.parse_args()
     sensorType = args.sensortype
 
-    port_table = {'VehiclePort': 33313}  # Hardcoded port table for testing
+    port_table = {'VehiclePort': 33317}  # Hardcoded port table for testing
     port = port_table['VehiclePort']     # The port used by the server
 
     initial_message = sensorType + " 1"
