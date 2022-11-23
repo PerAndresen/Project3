@@ -4,9 +4,9 @@ import threading
 import types
 import csv
 import os
-import broadcast_reciever
-import broadcast_sender
-import sensor1
+#import broadcast_reciever
+#import broadcast_sender
+#import sensor1
 import time
 
 
@@ -47,12 +47,12 @@ class Data(Package):
 class Pi:
 
 
-	def __init__(self, host, port, name, target):
-		self.host = host
-		self.port = port
-		self.name = name
-		self.target = target
-		self.network = set()
+    def __init__(self, host, port, name, target):
+        self.host = host
+        self.port = port
+        self.name = name
+        self.target = target
+        self.network = set()
 
 
 
@@ -174,6 +174,9 @@ def createInterest(input):
 
 
 def ClientConsole():
+    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s.bind(('10.35.70.16', 33313))
+    s.listen()
     print('==================================================')
     print('Your device is now running')
     print('==================================================')
@@ -182,6 +185,7 @@ def ClientConsole():
         operation = input(">>>")
         if operation=='/Local/Sensors':
             #GetListOfSensors()
+            os.system('python3 sensor.py --sensortype speed')
             print("Sensors")
         elif operation=='/Local/Sensors/SensorWeather':
             createInterest(operation)
@@ -203,13 +207,14 @@ def ClientConsole():
 
     
 def main():
-    console = threading.Thread(target=ClientConsole())
-    broadcastOut = threading.Thread(target=broadcast_reciever())
-    broadcastIn = threading.Thread(target=broadcast_sender())
+    #console = threading.Thread(target=ClientConsole())
+    #broadcastOut = threading.Thread(target=broadcast_reciever())
+    #broadcastIn = threading.Thread(target=broadcast_sender())
     #sensor = threading.Thread(target=sensor1())
     #sensor.start()
     #time.sleep(10)
-    console.start()
+    #console.start()
+    ClientConsole()
     
     #broadcastOut.start()
     #broadcastIn.start()
@@ -222,9 +227,9 @@ if __name__ == '__main__':
 '''
 
 def accept_sensor():
-	#selector = selectors.DefaultSelector()
-	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	sock.bind(('10.35.70.16', 33302))
-	print("Socket bound to Port for sensor:", 33302)
-	sock.listen()
+    #selector = selectors.DefaultSelector()
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind(('10.35.70.16', 33302))
+    print("Socket bound to Port for sensor:", 33302)
+    sock.listen()
 '''

@@ -174,15 +174,12 @@ def accept_sensor():
 	print("Socket bound to Port for sensor:", 33302)
 	sock.listen()
 
-
-
-
 # main thread:
 # 创建两个线程
 try:
-   _thread.start_new_thread( thread_client, ("Thread-client",1))
-   _thread.start_new_thread( thread_server, ("Thread-server",2))
+	_thread.start_new_thread( thread_client, ("Thread-client",1))
+	_thread.start_new_thread( thread_server, ("Thread-server",2))
 except:
-   print ("Error: unable to start thread")
+	print ("Error: unable to start thread")
 while True:
 	pass
