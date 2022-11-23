@@ -65,5 +65,3 @@ def saveNetworks(device):
         f.close()
         print("Network saved")
 
-
-broadcastReceiver()

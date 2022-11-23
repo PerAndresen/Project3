@@ -21,8 +21,3 @@ def broadcast():
     broad.sendto(message, ('10.35.70.255',BROADCAST_PORT))
     print("Message sent!", message)
     time.sleep(5)
-
-
-
-
-broadcast()
