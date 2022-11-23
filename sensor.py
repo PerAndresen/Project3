@@ -104,7 +104,7 @@ class Sensor:
 
 
 def main():
-    port_table = {'VehiclePort': 33313}  # Hardcoded port table for testing
+    port_table = {'VehiclePort': 33317}  # Hardcoded port table for testing
     port = port_table['VehiclePort']     # The port used by the server
     initial_message = "sensor Data as follows:"
     byte_messages = [initial_message.encode('UTF-8')]

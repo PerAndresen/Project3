@@ -216,6 +216,7 @@ def ClientConsole():
         if operation=='/Local/Sensors':
             #GetListOfSensors()
             os.system('python3 sensor.py')
+
             print("Sensors")
         elif operation=='/Local/Sensors/SensorWeather':
             createInterest(operation)
