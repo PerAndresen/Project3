@@ -4,8 +4,8 @@ import threading
 import types
 import csv
 import os
-#import broadcast_reciever
-#import broadcast_sender
+import broadcast_reciever
+import broadcast_sender
 #import sensor1
 import time
 
@@ -62,11 +62,10 @@ def inputHandler(package):
     #if content is interest
     if str(package.type) == "interest":
         print(package.type)
-        dataname = package.name
-        sender = package.sender
-        forwardingInformationBase(dataname,sender)
-        checkContentStore(dataname,sender)
-        checkSensors(package)
+        #forwardInterest(package)
+        forwardingInformationBase(package=package)
+        #checkContentStore(dataname,sender)
+        #checkSensors(package)
     elif str(package.type) =="data":
         dataname = package.name
         content = package.content
@@ -97,11 +96,12 @@ def checkSensors(package):
 
 def forwardData(content, destination):
     forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    networks = csv.reader(open("networks.csv","r"),delimiter=",")
+    networks = csv.reader(open("networks.csv","wr"),delimiter=",")
     for row in networks:
         if row[2]==destination:
             target=row[0]
-            port=row[1]
+            port=int(row[1])
+            print(target,port)
             package = Data(destination,content)
             print("Forwarding data to requested destination")
             forward.connect((target,port))
@@ -109,30 +109,41 @@ def forwardData(content, destination):
             forward.close()
 
 
-def forwardInterest(name, parameters):
+def forwardInterest(package):
+    words= package.name.split("/")
+    networkName= words[1]
+    print(networkName)
     forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     networks = csv.reader(open("networks.csv","r"),delimiter=",")
     for row in networks:
-        if row[2]==name:
+        if row[2]==networkName:
             target=row[0]
-            port=row[1]
-            package = Interest(name,parameters)
+            port=int(row[1])
+            print(target,port)
             print("Forwarding interest to requested destination")
             forward.connect((target,port))
-            forward.send(package.encode())
+            message = f'{package.name},{package.type},{package.sender}'.encode('utf-8')
+            print(message)
+            forward.send(message)
             forward.close()
 
 
-def listener(Pi):
-    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    listener.bind ((Pi.host, Pi.port))
-    listener.listen(5)
-    print("Listening on ", Pi.host, Pi.port)
+def listener(sock):
+    host = socket.gethostbyname(socket.gethostname())
+    print("Listening on ", host, 33317)
     while True:
-        conn, _ = listener.accept()
+        conn, _ = sock.accept()
         input = conn.recv(1024)
         input = input.decode('utf-8')
-        inputHandler(input)
+        print(input)
+        splitWords = input.split(",")
+        name=splitWords[0]
+        type=splitWords[1]
+        sender=splitWords[2]
+        print(name,type)
+        package = Package(name=name, type=type,sender=sender)
+        print(package.type)
+        inputHandler(package=package)
 
 
 def contentStore(name, data):
@@ -159,24 +170,43 @@ def checkInterestTable(prefix, sender, content):
     #If someone has requested it, we forward it to them
     #Sends required data
 
-def forwardingInformationBase(name, parameters):
-    networks = csv.reader(open("networks.csv","r"),delimiter=",")
-    for row in networks:
-        if name == row[2]:
-            forwardInterest(name, parameters)
-    #Check if there is a pending interesent with this data
+def forwardingInformationBase(package):
+    print("Checking informationbase")
+    informationBase = csv.reader(open("forwardDB.csv", "r"), delimiter=",")
+    exists = False
+    for row in informationBase:
+        print("ROW")
+        print(package.name)
+        print(row[0])
+        if row[0]==package.name:
+            f = open("forwardDB.csv","w")
+            f.write(package.name+",0"+"\n")
+            f.close()
+            exists = True
+            row[1]="1"
+            if row[1]=="0":
+                forwardInterest(package=package)
+            elif row[1]=="1":
+                break
+    if exists != True:
+        f = open("forwardDB.csv","a")
+        f.write(package.name+",0"+"\n")
+        f.close()
+    #Check if there is a pending interest with this data
 
 def createInterest(input):
-    interest = Interest(type="interest",name=input,sender="BOB")
-    interest.type="interest"
+    host = socket.gethostbyname(socket.gethostname())
+    interest = Interest(type="interest",name=input,sender=host)
     print("Created interest")
     inputHandler(interest)
 
 
 def ClientConsole():
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    s.bind(('10.35.70.16', 33313))
-    s.listen()
+    host = socket.gethostbyname(socket.gethostname())
+    s.bind((host, 33317))
+    s.listen(5)
+    #listener()
     print('==================================================')
     print('Your device is now running')
     print('==================================================')
@@ -191,11 +221,16 @@ def ClientConsole():
             createInterest(operation)
         elif operation=='/Local/Sensors/WindSpeed':
             #GetWindSpeed()
-            print("Windspeed")    
-        elif operation=='/Local/Sensors/WindDirection':
+            print("Windspeed")
+        elif operation == 'Broadcast/Recieve':
+            broadcast_reciever.broadcastReceiver()
+        elif operation == 'Broadcast/Send':
+            broadcast_sender.broadcast()
+        elif operation=='quit':
             #GetWindDirection()    import sensor1
-
             break
+        elif operation=='listen':
+            listener(s)
         elif operation=='help':
             print('/Sensors: Get list of sensors.')
             print('getf: get file from the server.')
@@ -204,6 +239,7 @@ def ClientConsole():
             createInterest(operation)
             print('Checking the internet for this query')
     print('The client has been logged out.')
+    s.close()
 
     
 def main():
