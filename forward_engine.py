@@ -221,7 +221,8 @@ def ClientConsole():
         operation = input(">>>")
         if operation=='/Local/Sensors':
             #GetListOfSensors()
-            os.system('python3 sensor.py --sensortype speed')
+            os.system('python3 sensor.py')
+
             print("Sensors")
         elif operation=='/Local/Sensors/SensorWeather':
             createInterest(operation)
