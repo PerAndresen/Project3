@@ -11,6 +11,9 @@ import time
 
 
 cache = {}
+informationBase= {
+    '/NewYork/Sensor':'0'
+}
 pendingInterestTable = {}
 Dictionary = {
     'temp_high':'0000',
@@ -130,7 +133,7 @@ def forwardInterest(package):
 
 def listener(sock):
     host = socket.gethostbyname(socket.gethostname())
-    print("Listening on ", host, 33317)
+    print("Listening on ", host, 33318)
     while True:
         conn, _ = sock.accept()
         input = conn.recv(1024)
@@ -166,24 +169,27 @@ def checkInterestTable(prefix, sender, content):
         if prefix == query and author==sender:
             forwardData(content, author)
     #Keeping log of the wanted in buffer, triggers when receiving data.
-
     #If someone has requested it, we forward it to them
     #Sends required data
 
 def forwardingInformationBase(package):
     print("Checking informationbase")
-    informationBase = csv.reader(open("forwardDB.csv", "r"), delimiter=",")
+    for interest, value in informationBase.items():
+        if package.name == interest:
+            if value=='0':
+                forwardInterest(package)
+            if value=='1':
+                print(interest, "Already forwarded")
+    
+        
+    '''informationBase = csv.reader(open("forwardDB.csv", "r"), delimiter=",")
     exists = False
     for row in informationBase:
-        print("ROW")
-        print(package.name)
-        print(row[0])
         if row[0]==package.name:
+            exists = True
             f = open("forwardDB.csv","w")
             f.write(package.name+",0"+"\n")
             f.close()
-            exists = True
-            row[1]="1"
             if row[1]=="0":
                 forwardInterest(package=package)
             elif row[1]=="1":
@@ -191,7 +197,7 @@ def forwardingInformationBase(package):
     if exists != True:
         f = open("forwardDB.csv","a")
         f.write(package.name+",0"+"\n")
-        f.close()
+        f.close()'''
     #Check if there is a pending interest with this data
 
 def createInterest(input):
@@ -204,7 +210,7 @@ def createInterest(input):
 def ClientConsole():
     s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     host = socket.gethostbyname(socket.gethostname())
-    s.bind((host, 33317))
+    s.bind((host, 33318))
     s.listen(5)
     #listener()
     print('==================================================')
