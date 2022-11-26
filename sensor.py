@@ -66,6 +66,7 @@ class Sensor:
         data = key.data
         if mask & selectors.EVENT_READ:
             recv_data = sock.recv(1024)
+            input = recv_data.decode('utf-8')
             if recv_data:
                 data.recv_total += len(recv_data)
         elif mask & selectors.EVENT_WRITE:

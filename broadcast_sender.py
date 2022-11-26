@@ -4,8 +4,9 @@ import selectors
 import types
 import threading
 import time
+import forward_engine as fe
 
-BROADCAST_PORT = 33339
+BROADCAST_PORT = 33333
 name ="Dublin"
 
 def broadcast():
@@ -17,7 +18,7 @@ def broadcast():
     hostname = socket.gethostname()
     host = socket.gethostbyname(hostname)
     print(host)
-    message = f'GROUP8 HOST {host} PORT {BROADCAST_PORT} NAME {name}'.encode('utf-8')    
+    message = f'GROUP8 HOST {host} PORT {fe.devicePort} NAME {name}'.encode('utf-8')    
     broad.sendto(message, ('10.35.70.255',BROADCAST_PORT))
     print("Message sent!", message)
     time.sleep(5)

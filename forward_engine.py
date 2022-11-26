@@ -6,11 +6,13 @@ import csv
 import os
 import broadcast_reciever
 import broadcast_sender
-#import sensor1
+import sensor1
 import time
 
 
-cache = {}
+cache = {
+    '/NewYork/Temperature':'80'
+}
 informationBase= {
     '/NewYork/Sensor':'0'
 }
@@ -21,7 +23,17 @@ Dictionary = {
     'air_pressure':'0010',
     '/Local/Sensors/SensorWeather':'0100'
 }
+unitName="NewYork"
 
+'''
+s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+host = socket.gethostbyname(socket.gethostname())
+s.bind((host, 33318))
+s.listen(5) '''
+#localSocket = s.dup()
+#networkSocket = s.dup()
+
+devicePort= 33338
 
 class Package:
 
@@ -36,15 +48,13 @@ class Package:
 class Interest(Package):
     pass
 
-        #self.parameters = parameters
-
         
 
 class Data(Package):
 
-    def __init__(self, content, signature):
+    def __init__(self, content):
         self.content = content
-        self.signature = signature
+        #self.signature = signature
 
 
 class Pi:
@@ -60,55 +70,45 @@ class Pi:
 
 
 def inputHandler(package):
-    print(package.type)
-    print(type(package.type))
     #if content is interest
     if str(package.type) == "interest":
-        print(package.type)
         #forwardInterest(package)
         forwardingInformationBase(package=package)
-        #checkContentStore(dataname,sender)
-        #checkSensors(package)
+        checkSensors(package)
+        checkContentStore(package=package)
     elif str(package.type) =="data":
-        dataname = package.name
-        content = package.content
-        #signature = package.signature host = socket.gethostbyname(socket.gethostname())
-        #checkInterestTable(dataname, parameters)
-        contentStore(dataname, content)
-        for key, nameOfDestination in pendingInterestTable.items():
-            if package.prefix == key:
-                forwardData(package, nameOfDestination)
+        contentStore(package)
+        #for key, nameOfDestination in pendingInterestTable.items():
+          #if package.prefix == key:
+           #     forwardData(package, nameOfDestination)
 
                     
-def checkSensors(package):
+def checkSensors(interest):
     print("Sending to sensors")
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    host = socket.gethostbyname(socket.gethostname())
-    print('HostIP',host)
-    #sock.bind((host,33378))
-    message= str(package)
-    sock.connect((host,33322))
-    sock.send(message.encode("utf-8"))
-    while True:
-        conn, _ = sock.accept()
-        dataFromSensor= conn.recv(1024)
-        #print(dataFromSensor.decode())
-        return dataFromSensor.decode()
+    splitWords = interest.name.split("/")
+    if splitWords[1]==unitName:
+        sensor=splitWords[2]
+        sensorvalue = sensor1.Sensor.get_sensor(sensor)
+        dataPackage = Data(sensorvalue)
+        dataPackage.name = interest.name
+        dataPackage.sender = interest.sender
+        contentStore(dataPackage=dataPackage)
 
 
-
-def forwardData(content, destination):
+def forwardData(dataPackage, destination):
+    print(destination)
+    print(destination, "for data packet")
     forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    networks = csv.reader(open("networks.csv","wr"),delimiter=",")
+    networks = csv.reader(open("networks.csv","r"),delimiter=",")
     for row in networks:
-        if row[2]==destination:
+        if row[0]==destination:
             target=row[0]
             port=int(row[1])
             print(target,port)
-            package = Data(destination,content)
             print("Forwarding data to requested destination")
             forward.connect((target,port))
-            forward.send(package.encode())
+            message = f'{dataPackage.name},{dataPackage.type},{dataPackage.sender},{dataPackage.content}'.encode('utf-8')
+            forward.send(message)
             forward.close()
 
 
@@ -122,7 +122,6 @@ def forwardInterest(package):
         if row[2]==networkName:
             target=row[0]
             port=int(row[1])
-            print(target,port)
             print("Forwarding interest to requested destination")
             forward.connect((target,port))
             message = f'{package.name},{package.type},{package.sender}'.encode('utf-8')
@@ -130,12 +129,12 @@ def forwardInterest(package):
             forward.send(message)
             forward.close()
 
-
-def listener(sock):
+'''
+def listener():
     host = socket.gethostbyname(socket.gethostname())
     print("Listening on ", host, 33318)
     while True:
-        conn, _ = sock.accept()
+        conn, _ = s.accept()
         input = conn.recv(1024)
         input = input.decode('utf-8')
         print(input)
@@ -147,21 +146,37 @@ def listener(sock):
         package = Package(name=name, type=type,sender=sender)
         print(package.type)
         inputHandler(package=package)
+'''
 
 
-def contentStore(name, data):
-    if name not in cache:
-        cache[name]=data
-    else:
-        return
-    #Where all the data is keptelif operation=='/Local/Sensors/WindSpeed':
-    #Database for keeping the content.
 
-def checkContentStore(interest, sender):
-    for key, data in cache.items():
-        if interest == key:
-            print("Found in cache")
-            forwardData(data, sender)
+def contentStore(dataPackage):
+    print("Storing in content store")
+    '''exists =False
+    for name,data in list(cache.items()):
+        if dataPackage.name == name:
+            exists= True
+            break
+    if exists==False:'''
+    name = dataPackage.name
+    data = dataPackage.content 
+    newContent = {name:data}
+    print(newContent)
+    cache.update(newContent)
+    print("Content saved")
+
+def checkContentStore(package):
+    print("Checking content store")
+    for name, data in list(cache.items()):
+        if package.name == name:
+            print("Found in contentstore")
+            dataPackage= Data(content=data)
+            dataPackage.name=name
+            dataPackage.type="data"
+            dataPackage.sender=package.sender
+            print(package.sender)
+            forwardData(dataPackage, package.sender)
+        
 
 
 def checkInterestTable(prefix, sender, content):
@@ -174,31 +189,21 @@ def checkInterestTable(prefix, sender, content):
 
 def forwardingInformationBase(package):
     print("Checking informationbase")
-    for interest, value in informationBase.items():
+    exists=False
+    for interest, value in list(informationBase.items()):
         if package.name == interest:
+            exists=True
             if value=='0':
                 forwardInterest(package)
-            if value=='1':
+                informationBase[interest]='1'
+            elif value=='1':
                 print(interest, "Already forwarded")
-    
-        
-    '''informationBase = csv.reader(open("forwardDB.csv", "r"), delimiter=",")
-    exists = False
-    for row in informationBase:
-        if row[0]==package.name:
-            exists = True
-            f = open("forwardDB.csv","w")
-            f.write(package.name+",0"+"\n")
-            f.close()
-            if row[1]=="0":
-                forwardInterest(package=package)
-            elif row[1]=="1":
-                break
-    if exists != True:
-        f = open("forwardDB.csv","a")
-        f.write(package.name+",0"+"\n")
-        f.close()'''
-    #Check if there is a pending interest with this data
+    if exists== False:
+        name = package.name
+        newInterest={name:'1'}
+        print(newInterest)
+        informationBase.update(newInterest)
+        forwardInterest(package)
 
 def createInterest(input):
     host = socket.gethostbyname(socket.gethostname())
@@ -208,10 +213,6 @@ def createInterest(input):
 
 
 def ClientConsole():
-    s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-    host = socket.gethostbyname(socket.gethostname())
-    s.bind((host, 33318))
-    s.listen(5)
     #listener()
     print('==================================================')
     print('Your device is now running')
@@ -220,33 +221,29 @@ def ClientConsole():
     while True:
         operation = input(">>>")
         if operation=='/Local/Sensors':
-            #GetListOfSensors()
-            os.system('python3 sensor.py')
-
             print("Sensors")
         elif operation=='/Local/Sensors/SensorWeather':
             createInterest(operation)
         elif operation=='/Local/Sensors/WindSpeed':
-            #GetWindSpeed()
             print("Windspeed")
         elif operation == 'Broadcast/Recieve':
             broadcast_reciever.broadcastReceiver()
         elif operation == 'Broadcast/Send':
             broadcast_sender.broadcast()
         elif operation=='quit':
-            #GetWindDirection()    import sensor1
             break
         elif operation=='listen':
-            listener(s)
+            print("Listening")
         elif operation=='help':
             print('/Sensors: Get list of sensors.')
             print('getf: get file from the server.')
             print('quit: close the connection and quit.')
+        elif operation =='data':
+            package = Package(type="interest",name="/NewYork/Temp", sender="Bob")
+            checkSensors(package=package)
         else:
-            createInterest(operation)
-            print('Checking the internet for this query')
+            createInterest(operation)       
     print('The client has been logged out.')
-    s.close()
 
     
 def main():
@@ -257,8 +254,12 @@ def main():
     #sensor.start()
     #time.sleep(10)
     #console.start()
-    ClientConsole()
+    os.system('python3 listen.py &')
+    os.system('python3 sensor1.py &')
+    console = threading.Thread(target=ClientConsole())
+    console.start()
     
+
     #broadcastOut.start()
     #broadcastIn.start()
 
