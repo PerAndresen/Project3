@@ -2,7 +2,7 @@ import socket
 import forward_engine as fw
 
 
-unitPort=fw.devicePort
+unitPort=fw.sensorPort
 global s
 s = None
 s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)

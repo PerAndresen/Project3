@@ -1,3 +1,4 @@
+import argparse
 import sys
 import socket
 import threading
@@ -17,23 +18,20 @@ informationBase= {
     '/NewYork/Sensor':'0'
 }
 pendingInterestTable = {}
-Dictionary = {
-    'temp_high':'0000',
-    'temp_low':'0001',
-    'air_pressure':'0010',
-    '/Local/Sensors/SensorWeather':'0100'
-}
-unitName="NewYork"
 
-'''
-s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-host = socket.gethostbyname(socket.gethostname())
-s.bind((host, 33318))
-s.listen(5) '''
-#localSocket = s.dup()
-#networkSocket = s.dup()
 
-devicePort= 33338
+#Tried implementing this to create a global object that can be accessed by the listener.
+class Unit:
+
+    def __init__(self,city, port):
+        self.city=city
+        self.port=port
+    
+    def __str__(self):
+        return self.city + self.port
+
+thisUnit=Unit(city="",port=0)
+sensorPort=33333
 
 class Package:
 
@@ -57,36 +55,20 @@ class Data(Package):
         #self.signature = signature
 
 
-class Pi:
-
-
-    def __init__(self, host, port, name, target):
-        self.host = host
-        self.port = port
-        self.name = name
-        self.target = target
-        self.network = set()
-
-
-
 def inputHandler(package):
     #if content is interest
     if str(package.type) == "interest":
-        #forwardInterest(package)
         forwardingInformationBase(package=package)
         checkSensors(package)
         checkContentStore(package=package)
     elif str(package.type) =="data":
         contentStore(package)
-        #for key, nameOfDestination in pendingInterestTable.items():
-          #if package.prefix == key:
-           #     forwardData(package, nameOfDestination)
 
                     
 def checkSensors(interest):
     print("Sending to sensors")
     splitWords = interest.name.split("/")
-    if splitWords[1]==unitName:
+    if splitWords[1]==thisUnit.City:
         sensor=splitWords[2]
         sensorvalue = sensor1.Sensor.get_sensor(sensor)
         dataPackage = Data(sensorvalue)
@@ -129,35 +111,9 @@ def forwardInterest(package):
             forward.send(message)
             forward.close()
 
-'''
-def listener():
-    host = socket.gethostbyname(socket.gethostname())
-    print("Listening on ", host, 33318)
-    while True:
-        conn, _ = s.accept()
-        input = conn.recv(1024)
-        input = input.decode('utf-8')
-        print(input)
-        splitWords = input.split(",")
-        name=splitWords[0]
-        type=splitWords[1]
-        sender=splitWords[2]
-        print(name,type)
-        package = Package(name=name, type=type,sender=sender)
-        print(package.type)
-        inputHandler(package=package)
-'''
-
-
 
 def contentStore(dataPackage):
     print("Storing in content store")
-    '''exists =False
-    for name,data in list(cache.items()):
-        if dataPackage.name == name:
-            exists= True
-            break
-    if exists==False:'''
     name = dataPackage.name
     data = dataPackage.content 
     newContent = {name:data}
@@ -183,9 +139,6 @@ def checkInterestTable(prefix, sender, content):
     for query, author in pendingInterestTable:
         if prefix == query and author==sender:
             forwardData(content, author)
-    #Keeping log of the wanted in buffer, triggers when receiving data.
-    #If someone has requested it, we forward it to them
-    #Sends required data
 
 def forwardingInformationBase(package):
     print("Checking informationbase")
@@ -205,6 +158,11 @@ def forwardingInformationBase(package):
         informationBase.update(newInterest)
         forwardInterest(package)
 
+def createUnit(city, port):
+    unitName=city
+    devicePort= port
+
+
 def createInterest(input):
     host = socket.gethostbyname(socket.gethostname())
     interest = Interest(type="interest",name=input,sender=host)
@@ -213,6 +171,7 @@ def createInterest(input):
 
 
 def ClientConsole():
+
     #listener()
     print('==================================================')
     print('Your device is now running')
@@ -247,33 +206,18 @@ def ClientConsole():
 
     
 def main():
-    #console = threading.Thread(target=ClientConsole())
-    #broadcastOut = threading.Thread(target=broadcast_reciever())
-    #broadcastIn = threading.Thread(target=broadcast_sender())
-    #sensor = threading.Thread(target=sensor1())
-    #sensor.start()
-    #time.sleep(10)
-    #console.start()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--city", required=True)
+    parser.add_argument("-p", "--port", required=True)
+    args = parser.parse_args()
+    thisUnit.city = args.city 
+    thisUnit.port = int(args.port)
     os.system('python3 listen.py &')
     os.system('python3 sensor1.py &')
     console = threading.Thread(target=ClientConsole())
     console.start()
-    
-
-    #broadcastOut.start()
-    #broadcastIn.start()
 
 
 
 if __name__ == '__main__':
     main()
-
-'''
-
-def accept_sensor():
-    #selector = selectors.DefaultSelector()
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.bind(('10.35.70.16', 33302))
-    print("Socket bound to Port for sensor:", 33302)
-    sock.listen()
-'''
