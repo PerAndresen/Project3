@@ -7,6 +7,7 @@ import socket
 import time
 import types
 import pandas as pd
+import sys
 
 
 weathers = pd.read_csv("climate.csv")
@@ -20,7 +21,6 @@ VisibilityAvg = weathers.iloc[:,14]
 WindAvg = weathers.iloc[:,17]
 
 sensorPort=33318
-
 
 class Sensor:
     dictionary = {

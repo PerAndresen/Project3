@@ -55,25 +55,36 @@ class Data(Package):
         #self.signature = signature
 
 
-def inputHandler(package):
+def inputHandler(package,city):
     #if content is interest
     if str(package.type) == "interest":
         forwardingInformationBase(package=package)
-        checkSensors(package)
+        checkSensors(interest=package,city=city)
         checkContentStore(package=package)
     elif str(package.type) =="data":
         contentStore(package)
 
                     
-def checkSensors(interest):
-    print("Sending to sensors")
+def checkSensors(interest,city):
+    print("Sending to sensors",interest.name)
+    print(interest.name)
     splitWords = interest.name.split("/")
-    if splitWords[1]==thisUnit.City:
+    print(splitWords[1])
+    #print(thisUnit.city)
+    '''hostname = socket.gethostname()
+    host = socket.gethostbyname(hostname)
+    networks = csv.reader(open("networks.csv","r"),delimiter=",")
+    for row in networks:
+        if row[0]==host:
+            cityname=row[2]'''
+    if city==splitWords[1]:
         sensor=splitWords[2]
         sensorvalue = sensor1.Sensor.get_sensor(sensor)
-        dataPackage = Data(sensorvalue)
+        print(sensorvalue)
+        dataPackage = Data(content=sensorvalue)
         dataPackage.name = interest.name
         dataPackage.sender = interest.sender
+        print(dataPackage.content)
         contentStore(dataPackage=dataPackage)
 
 
@@ -81,9 +92,10 @@ def forwardData(dataPackage, destination):
     print(destination)
     print(destination, "for data packet")
     forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     networks = csv.reader(open("networks.csv","r"),delimiter=",")
     for row in networks:
-        if row[0]==destination:
+        if row[2]==destination:
             target=row[0]
             port=int(row[1])
             print(target,port)
@@ -99,6 +111,7 @@ def forwardInterest(package):
     networkName= words[1]
     print(networkName)
     forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     networks = csv.reader(open("networks.csv","r"),delimiter=",")
     for row in networks:
         if row[2]==networkName:
@@ -151,6 +164,7 @@ def forwardingInformationBase(package):
                 informationBase[interest]='1'
             elif value=='1':
                 print(interest, "Already forwarded")
+    
     if exists== False:
         name = package.name
         newInterest={name:'1'}
@@ -158,19 +172,14 @@ def forwardingInformationBase(package):
         informationBase.update(newInterest)
         forwardInterest(package)
 
-def createUnit(city, port):
-    unitName=city
-    devicePort= port
-
-
-def createInterest(input):
-    host = socket.gethostbyname(socket.gethostname())
-    interest = Interest(type="interest",name=input,sender=host)
+def createInterest(input,city):
+    #host = socket.gethostbyname(socket.gethostname())
+    interest = Interest(type="interest",name=input,sender=city)
     print("Created interest")
-    inputHandler(interest)
+    inputHandler(interest,city)
 
 
-def ClientConsole():
+def ClientConsole(city):
 
     #listener()
     print('==================================================')
@@ -188,7 +197,7 @@ def ClientConsole():
         elif operation == 'Broadcast/Recieve':
             broadcast_reciever.broadcastReceiver()
         elif operation == 'Broadcast/Send':
-            broadcast_sender.broadcast()
+            broadcast_sender.broadcast(thisUnit.port, thisUnit.city)
         elif operation=='quit':
             break
         elif operation=='listen':
@@ -201,7 +210,7 @@ def ClientConsole():
             package = Package(type="interest",name="/NewYork/Temp", sender="Bob")
             checkSensors(package=package)
         else:
-            createInterest(operation)       
+            createInterest(operation,city)       
     print('The client has been logged out.')
 
     
@@ -210,14 +219,12 @@ def main():
     parser.add_argument("-c", "--city", required=True)
     parser.add_argument("-p", "--port", required=True)
     args = parser.parse_args()
-    thisUnit.city = args.city 
+    city = args.city
     thisUnit.port = int(args.port)
-    os.system('python3 listen.py &')
+    os.system('python3 listen.py %d &'%thisUnit.port)
     os.system('python3 sensor1.py &')
-    console = threading.Thread(target=ClientConsole())
+    console = threading.Thread(target=ClientConsole(city))
     console.start()
-
-
 
 if __name__ == '__main__':
     main()

@@ -41,6 +41,8 @@ def broadcastReceiver():
             device = Device(host, port, name)
             print(device)
             saveNetworks(device)
+            break
+
 
 def saveNetworks(device):
     print(device)
@@ -49,11 +51,6 @@ def saveNetworks(device):
     for row in networks:
         print("Row 0", row[0])
         print(device.host)
-        #if row[1] == device.port:
-        #    print('exists')
-        #    exists = True
-        #    break
-        #Hostname IP already exists
         if row[2] == device.name:
             print('exists')
             exists = True
