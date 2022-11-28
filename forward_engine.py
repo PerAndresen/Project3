@@ -92,7 +92,8 @@ def forwardData(dataPackage, destination):
     print(destination)
     print(destination, "for data packet")
     forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    #forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    forward.setblocking(False)
     networks = csv.reader(open("networks.csv","r"),delimiter=",")
     for row in networks:
         if row[2]==destination:
@@ -111,7 +112,8 @@ def forwardInterest(package):
     networkName= words[1]
     print(networkName)
     forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    #forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+    forward.setblocking(False)
     networks = csv.reader(open("networks.csv","r"),delimiter=",")
     for row in networks:
         if row[2]==networkName:
@@ -197,7 +199,7 @@ def ClientConsole(city):
         elif operation == 'Broadcast/Recieve':
             broadcast_reciever.broadcastReceiver()
         elif operation == 'Broadcast/Send':
-            broadcast_sender.broadcast(thisUnit.port, thisUnit.city)
+            broadcast_sender.broadcast(thisUnit.port, city)
         elif operation=='quit':
             break
         elif operation=='listen':
