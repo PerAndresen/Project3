@@ -52,11 +52,9 @@ class Data(Package):
 
     def __init__(self, content):
         self.content = content
-        #self.signature = signature
 
 
 def inputHandler(package,city):
-    #if content is interest
     if str(package.type) == "interest":
         forwardingInformationBase(package=package)
         checkSensors(interest=package,city=city)
@@ -70,13 +68,6 @@ def checkSensors(interest,city):
     print(interest.name)
     splitWords = interest.name.split("/")
     print(splitWords[1])
-    #print(thisUnit.city)
-    '''hostname = socket.gethostname()
-    host = socket.gethostbyname(hostname)
-    networks = csv.reader(open("networks.csv","r"),delimiter=",")
-    for row in networks:
-        if row[0]==host:
-            cityname=row[2]'''
     if city==splitWords[1]:
         sensor=splitWords[2]
         sensorvalue = sensor1.Sensor.get_sensor(sensor)
@@ -93,7 +84,6 @@ def forwardData(dataPackage, destination):
     print(destination, "for data packet")
     forward = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     forward.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
-    #forward.setblocking(False)
     networks = csv.reader(open("networks.csv","r"),delimiter=",")
     for row in networks:
         if row[2]==destination:
